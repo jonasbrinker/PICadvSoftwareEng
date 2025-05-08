@@ -39,3 +39,4 @@ C:\Users\yaddl\Nextcloud2\DH\6_Semester\advSoftwareEng\pic_sim\PICadvSoftwareEng
 C:\Users\yaddl\Nextcloud2\DH\6_Semester\advSoftwareEng\pic_sim\PICadvSoftwareEng\Pic_Simulator\Pic_Simulator\obj\Debug\net8.0-windows\Pic_Simulator.pdb
 C:\Users\yaddl\Nextcloud2\DH\6_Semester\advSoftwareEng\pic_sim\PICadvSoftwareEng\Pic_Simulator\Pic_Simulator\obj\Debug\net8.0-windows\Pic_Simulator.genruntimeconfig.cache
 C:\Users\yaddl\Nextcloud2\DH\6_Semester\advSoftwareEng\pic_sim\PICadvSoftwareEng\Pic_Simulator\Pic_Simulator\obj\Debug\net8.0-windows\ref\Pic_Simulator.dll
+C:\Users\yaddl\Nextcloud2\DH\6_Semester\advSoftwareEng\pic_sim\PICadvSoftwareEng\Pic_Simulator\Pic_Simulator\obj\Debug\net8.0-windows\Pic_Simulator.sourcelink.json

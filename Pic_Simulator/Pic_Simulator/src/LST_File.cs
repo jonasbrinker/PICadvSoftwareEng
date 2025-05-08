@@ -13,7 +13,7 @@ public class LST_File()
     static int startPos;
     public static int pos = 0;
     public static  Dictionary<int, TextBlock> breakpoints = new Dictionary<int, TextBlock>();
-    public static void LoadFile(StackPanel stack, ScrollViewer codeScroller)
+    public static void LoadFile(StackPanel stack, ScrollViewer codeScroller, SimulationData data)
     {
         var dialog = new Microsoft.Win32.OpenFileDialog();
         dialog.DefaultExt = ".lst";
@@ -24,7 +24,7 @@ public class LST_File()
         {           
             stack.Children.Clear();
             breakpoints.Clear(); 
-            MainWindow.commands.Clear();
+            data.commands.Clear();
             int counter = 0x0000;
             int tmppos = 1;
 
@@ -46,7 +46,7 @@ public class LST_File()
                     if (value == counter)
                     {
                         if (value == 0) startPos = tmppos - 1;
-                        MainWindow.commands.Add(Convert.ToInt32(command, 16));
+                        data.commands.Add(Convert.ToInt32(command, 16));
                         file = file + s;
                         counter++;
                     }

@@ -11,6 +11,7 @@ using System.Timers;
 using System.Windows.Threading;
 
 
+
 namespace Pic_Simulator
 {
 
@@ -21,13 +22,10 @@ namespace Pic_Simulator
     /// 
     public partial class MainWindow : Window
     {
-        public static List<int> commands = new List<int>();
-        DataTable tableRB = new DataTable();
-        DataTable tableRA = new DataTable();
-        DataTable tableSTR = new DataTable();
-        DataTable tableIntCon = new DataTable();
-        DataTable tableOption = new DataTable();
-        DataTable tableStack = new DataTable();
+        public SimulationData data;
+        //private ViewUpdater viewUpdater;
+        //private SimulationController controller;
+
         double runTime = 0;
         private DispatcherTimer timer;
         bool run = false; 
@@ -37,6 +35,7 @@ namespace Pic_Simulator
         public MainWindow()
         {
             InitializeComponent();
+            data = new SimulationData();
             Command.startUpRam();  
             PrintRam();
             PrintRaRb();
@@ -59,7 +58,7 @@ namespace Pic_Simulator
         
         private void LoadFile(object sender, RoutedEventArgs e)
         {
-            LST_File.LoadFile(Stack, CodeScroller);
+            LST_File.LoadFile(Stack, CodeScroller, data);
             Command.ResetController(Stack);
             refreshUI();
             resetLEDs();
@@ -70,9 +69,9 @@ namespace Pic_Simulator
         {
             int rowIndex = RAGrid.Items.IndexOf(RAGrid.CurrentItem);
             int colIndex = RAGrid.CurrentCell.Column.DisplayIndex;
-            string storageVal = (string)tableRA.Rows[rowIndex][colIndex];
+            string storageVal = (string)data.tableRA.Rows[rowIndex][colIndex];
             int cellValue = Convert.ToInt32(storageVal);  
-            tableRA.Rows[rowIndex][colIndex] = (cellValue == 0) ? 1 : 0;
+            data.tableRA.Rows[rowIndex][colIndex] = (cellValue == 0) ? 1 : 0;
             int newBit = 0;
             
             if (cellValue == 0)
@@ -87,8 +86,8 @@ namespace Pic_Simulator
         private void selectedCellsChangedSTR(object sender, RoutedEventArgs e) {
             int rowIndex = STRGrid.Items.IndexOf(STRGrid.CurrentItem);
             int colIndex = STRGrid.CurrentCell.Column.DisplayIndex;
-            int cellValue = (int)tableSTR.Rows[rowIndex][colIndex];  
-            tableSTR.Rows[rowIndex][colIndex] = (cellValue == 0) ? 1 : 0;
+            int cellValue = (int)data.tableSTR.Rows[rowIndex][colIndex];  
+            data.tableSTR.Rows[rowIndex][colIndex] = (cellValue == 0) ? 1 : 0;
             int newBit = 0;
 
             if (cellValue == 0)
@@ -105,8 +104,8 @@ namespace Pic_Simulator
         {
             int rowIndex = INTCONGrid.Items.IndexOf(INTCONGrid.CurrentItem);
             int colIndex = INTCONGrid.CurrentCell.Column.DisplayIndex;
-            int cellValue = (int)tableIntCon.Rows[rowIndex][colIndex];
-            tableIntCon.Rows[rowIndex][colIndex] = (cellValue == 0) ? 1 : 0;
+            int cellValue = (int)data.tableIntCon.Rows[rowIndex][colIndex];
+            data.tableIntCon.Rows[rowIndex][colIndex] = (cellValue == 0) ? 1 : 0;
             int newBit = 0;
 
             if (cellValue == 0)
@@ -122,8 +121,8 @@ namespace Pic_Simulator
         {
             int rowIndex = OptionGrid.Items.IndexOf(OptionGrid.CurrentItem);
             int colIndex = OptionGrid.CurrentCell.Column.DisplayIndex;
-            int cellValue = (int)tableOption.Rows[rowIndex][colIndex];
-            tableOption.Rows[rowIndex][colIndex] = (cellValue == 0) ? 1 : 0;
+            int cellValue = (int)data.tableOption.Rows[rowIndex][colIndex];
+            data.tableOption.Rows[rowIndex][colIndex] = (cellValue == 0) ? 1 : 0;
             int newBit = 0;
 
             if (cellValue == 0)
@@ -143,8 +142,8 @@ namespace Pic_Simulator
         {
             int rowIndex = RBGrid.Items.IndexOf(RBGrid.CurrentItem);
             int colIndex = RBGrid.CurrentCell.Column.DisplayIndex;
-            int cellValue = Convert.ToInt32((string)tableRB.Rows[rowIndex][colIndex]);
-            tableRB.Rows[rowIndex][colIndex] = (cellValue == 0) ? 1 : 0;
+            int cellValue = Convert.ToInt32((string)data.tableRB.Rows[rowIndex][colIndex]);
+            data.tableRB.Rows[rowIndex][colIndex] = (cellValue == 0) ? 1 : 0;
             int newBit = 0;
 
             if (cellValue == 0)
@@ -159,24 +158,24 @@ namespace Pic_Simulator
         {
             for (int i = 7; i >= 0; i--)
             {
-                tableRA.Rows[0][i] = Command.GetSelectedBit(Command.ram[0, 5], Math.Abs(i-7)).ToString() ;
-                tableRB.Rows[0][i] = Command.GetSelectedBit(Command.ram[0, 6], Math.Abs(i - 7)).ToString();
+                data.tableRA.Rows[0][i] = Command.GetSelectedBit(Command.ram[0, 5], Math.Abs(i-7)).ToString() ;
+                data.tableRB.Rows[0][i] = Command.GetSelectedBit(Command.ram[0, 6], Math.Abs(i - 7)).ToString();
                 int trisA =  Command.GetSelectedBit(Command.ram[1, 5], Math.Abs(i - 7));
                 if(trisA == 0)
                 {
-                    tableRA.Rows[1][i] = "o"; 
+                    data.tableRA.Rows[1][i] = "o"; 
                 }else
                 {
-                    tableRA.Rows[1][i] = "i";
+                    data.tableRA.Rows[1][i] = "i";
                 }
                 int trisB = Command.GetSelectedBit(Command.ram[1, 6], Math.Abs(i - 7));
                 if (trisB == 0)
                 {
-                    tableRB.Rows[1][i] = "o";
+                    data.tableRB.Rows[1][i] = "o";
                 }
                 else
                 {
-                    tableRB.Rows[1][i] = "i";
+                    data.tableRB.Rows[1][i] = "i";
                 }
             }
         }
@@ -185,7 +184,7 @@ namespace Pic_Simulator
         {
             for (int i = 7; i >= 0; i--)
             {
-                tableSTR.Rows[0][i] = Command.GetSelectedBit(Command.ram[Command.bank, 3], Math.Abs(i - 7));
+                data.tableSTR.Rows[0][i] = Command.GetSelectedBit(Command.ram[Command.bank, 3], Math.Abs(i - 7));
                 
             }
         }
@@ -194,7 +193,7 @@ namespace Pic_Simulator
         {
             for (int i = 0; i < 8; i++)
             {
-                tableStack.Rows[i][0] = Command.callStack[i];
+                data.tableStack.Rows[i][0] = Command.callStack[i];
 
             }
             CallPos.Text = Command.callPosition.ToString();
@@ -204,7 +203,7 @@ namespace Pic_Simulator
         {
             for (int i = 7; i >= 0; i--)
             {
-                tableIntCon.Rows[0][i] = Command.GetSelectedBit(Command.ram[0, 11], Math.Abs(i - 7));
+                data.tableIntCon.Rows[0][i] = Command.GetSelectedBit(Command.ram[0, 11], Math.Abs(i - 7));
 
             }
         }
@@ -213,7 +212,7 @@ namespace Pic_Simulator
         {
             for (int i = 7; i >= 0; i--)
             {
-                tableOption.Rows[0][i] = Command.GetSelectedBit(Command.ram[1, 1], Math.Abs(i - 7));
+                data.tableOption.Rows[0][i] = Command.GetSelectedBit(Command.ram[1, 1], Math.Abs(i - 7));
 
             }
         }
@@ -416,19 +415,19 @@ namespace Pic_Simulator
 
             for (int i = 7; i >= 0; i--)
             {
-                tableRA.Columns.Add("RA" + i.ToString(), typeof(string));
+                data.tableRA.Columns.Add("RA" + i.ToString(), typeof(string));
             }
             int storageRA = Command.ram[Command.bank, 5];
-            DataRow rowRA = tableRA.NewRow();
+            DataRow rowRA = data.tableRA.NewRow();
             int j = 0;
             for (int i = 7; i >= 0; i--)
             {
                 rowRA[j] = Command.GetSelectedBit(Command.ram[Command.bank, 5], i).ToString();
                 j++;
             }
-            tableRA.Rows.Add(rowRA);
+            data.tableRA.Rows.Add(rowRA);
 
-            DataRow rowTrisRA = tableRA.NewRow();
+            DataRow rowTrisRA = data.tableRA.NewRow();
             j = 0;
             for (int i = 7; i >= 0; i--)
             {
@@ -443,27 +442,27 @@ namespace Pic_Simulator
                 }
                 j++;
             }
-            tableRA.Rows.Add(rowTrisRA);
+            data.tableRA.Rows.Add(rowTrisRA);
 
-            RAGrid.ItemsSource = tableRA.DefaultView;
+            RAGrid.ItemsSource = data.tableRA.DefaultView;
 
 
             // Füge Spalten für RB0 bis RB7 hinzu
             for (int i = 7; i >= 0; i--)
             {
-                tableRB.Columns.Add("RB" + i.ToString(), typeof(string));
+                data.tableRB.Columns.Add("RB" + i.ToString(), typeof(string));
             }
 
-            DataRow rowRB = tableRB.NewRow();
+            DataRow rowRB = data.tableRB.NewRow();
             int k = 0; 
             for (int i = 7; i >= 0; i--)
             {
                 rowRB[k] = Command.GetSelectedBit(Command.ram[Command.bank, 6], i).ToString();
                 k++; 
             }
-            tableRB.Rows.Add(rowRB);
+            data.tableRB.Rows.Add(rowRB);
 
-            DataRow rowTrisRB = tableRB.NewRow();
+            DataRow rowTrisRB = data.tableRB.NewRow();
             k = 0;
             for (int i = 7; i >= 0; i--)
             {
@@ -478,8 +477,8 @@ namespace Pic_Simulator
                 }                
                 k++;
             }
-            tableRB.Rows.Add(rowTrisRB);
-            RBGrid.ItemsSource = tableRB.DefaultView;
+            data.tableRB.Rows.Add(rowTrisRB);
+            RBGrid.ItemsSource = data.tableRB.DefaultView;
 
             
 
@@ -489,90 +488,90 @@ namespace Pic_Simulator
 
         private void PrintStack()
         {
-            tableStack.Columns.Add("Stack", typeof(int)); 
+            data.tableStack.Columns.Add("Stack", typeof(int)); 
             
              
             for (int i= 0; i < 8; i++)
             {
-                DataRow row = tableStack.NewRow();
+                DataRow row = data.tableStack.NewRow();
                 row[0] = Command.callStack[i];
-                tableStack.Rows.Add(row);
+                data.tableStack.Rows.Add(row);
             }
             
-            StackGrid.ItemsSource = tableStack.DefaultView;
+            StackGrid.ItemsSource = data.tableStack.DefaultView;
             CallPos.Text = Command.callPosition.ToString();
         }
 
         private void PrintSTR()
         {
 
-            tableSTR.Columns.Add("IRP", typeof(int));
-            tableSTR.Columns.Add("RP1", typeof(int));
-            tableSTR.Columns.Add("RP0" , typeof(int));
-            tableSTR.Columns.Add("TO", typeof(int));
-            tableSTR.Columns.Add("PD", typeof(int));
-            tableSTR.Columns.Add("Z", typeof(int));
-            tableSTR.Columns.Add("D", typeof(int));
-            tableSTR.Columns.Add("C", typeof(int));
+            data.tableSTR.Columns.Add("IRP", typeof(int));
+            data.tableSTR.Columns.Add("RP1", typeof(int));
+            data.tableSTR.Columns.Add("RP0" , typeof(int));
+            data.tableSTR.Columns.Add("TO", typeof(int));
+            data.tableSTR.Columns.Add("PD", typeof(int));
+            data.tableSTR.Columns.Add("Z", typeof(int));
+            data.tableSTR.Columns.Add("D", typeof(int));
+            data.tableSTR.Columns.Add("C", typeof(int));
 
 
-            DataRow row = tableSTR.NewRow();
+            DataRow row = data.tableSTR.NewRow();
             int k = 0;
             for (int i = 7; i >= 0; i--)
             {
                 row[k] = Command.GetSelectedBit(Command.ram[Command.bank, 3], i);
                 k++;
             }
-            tableSTR.Rows.Add(row);
-            STRGrid.ItemsSource = tableSTR.DefaultView;
+            data.tableSTR.Rows.Add(row);
+            STRGrid.ItemsSource = data.tableSTR.DefaultView;
         }
 
         private void PrintINTCON()
         {
 
-            tableIntCon.Columns.Add("GIE", typeof(int));
-            tableIntCon.Columns.Add("EEIE", typeof(int));
-            tableIntCon.Columns.Add("T0IE", typeof(int));
-            tableIntCon.Columns.Add("INTE", typeof(int));
-            tableIntCon.Columns.Add("RBIE", typeof(int));
-            tableIntCon.Columns.Add("T0IF", typeof(int));
-            tableIntCon.Columns.Add("INTF", typeof(int));
-            tableIntCon.Columns.Add("RBIF", typeof(int));
+            data.tableIntCon.Columns.Add("GIE", typeof(int));
+            data.tableIntCon.Columns.Add("EEIE", typeof(int));
+            data.tableIntCon.Columns.Add("T0IE", typeof(int));
+            data.tableIntCon.Columns.Add("INTE", typeof(int));
+            data.tableIntCon.Columns.Add("RBIE", typeof(int));
+            data.tableIntCon.Columns.Add("T0IF", typeof(int));
+            data.tableIntCon.Columns.Add("INTF", typeof(int));
+            data.tableIntCon.Columns.Add("RBIF", typeof(int));
 
 
-            DataRow row = tableIntCon.NewRow();
+            DataRow row = data.tableIntCon.NewRow();
             int k = 0;
             for (int i = 7; i >= 0; i--)
             {
                 row[k] = Command.GetSelectedBit(Command.ram[Command.bank, 11], i);
                 k++;
             }
-            tableIntCon.Rows.Add(row);
-            INTCONGrid.ItemsSource = tableIntCon.DefaultView;
+            data.tableIntCon.Rows.Add(row);
+            INTCONGrid.ItemsSource = data.tableIntCon.DefaultView;
         }
 
         private void PrintOption()
         {
 
-            tableOption.Columns.Add("RBPU", typeof(int));
-            tableOption.Columns.Add("INTEDG", typeof(int));
-            tableOption.Columns.Add("T0CS", typeof(int));
-            tableOption.Columns.Add("T0SE", typeof(int));
-            tableOption.Columns.Add("PSA", typeof(int));
-            tableOption.Columns.Add("PS2", typeof(int));
-            tableOption.Columns.Add("PS1", typeof(int));
-            tableOption.Columns.Add("PS0", typeof(int));
+            data.tableOption.Columns.Add("RBPU", typeof(int));
+            data.tableOption.Columns.Add("INTEDG", typeof(int));
+            data.tableOption.Columns.Add("T0CS", typeof(int));
+            data.tableOption.Columns.Add("T0SE", typeof(int));
+            data.tableOption.Columns.Add("PSA", typeof(int));
+            data.tableOption.Columns.Add("PS2", typeof(int));
+            data.tableOption.Columns.Add("PS1", typeof(int));
+            data.tableOption.Columns.Add("PS0", typeof(int));
 
 
-            DataRow row = tableOption.NewRow();
+            DataRow row = data.tableOption.NewRow();
             int k = 0;
             for (int i = 7; i >= 0; i--)
             {
                 row[k] = Command.GetSelectedBit(Command.ram[1, 1], i);
                 k++;
             }
-            tableOption.Rows.Add(row);
-            OptionGrid.ItemsSource = tableOption.DefaultView;
+            data.tableOption.Rows.Add(row);
+            OptionGrid.ItemsSource = data.tableOption.DefaultView;
         }
 
         private void PrintRam()
@@ -612,52 +611,14 @@ namespace Pic_Simulator
 
         private void dtRowChanged(object sender, DataRowChangeEventArgs e)
         {
-            DataRow changedRow = e.Row;
-            DataTable table = changedRow.Table;
-            int rowIndex = table.Rows.IndexOf(changedRow);
-            String[] intArray = ConvertRowToIntArray(changedRow);
-            int i = 0; 
-            if(rowIndex > 15)
-            {
-                i = 1;
-                rowIndex = rowIndex - 16; // Das muss gemacht werden da es im dargestellten ram alles in einer Tabelle hängt aber im speicher aufgeteilt wird auf Command.bank 1 und 0
-            }
-            int rowstart = rowIndex * 8; 
-
-            for(int j = 0; j <8; j++)
-            {
-                if(Convert.ToInt32(intArray[j], 16) > 255)
-                {
-                    Command.ram[i, (rowstart + j)] = 0; 
-                }
-                else
-                {
-                    Command.ram[i, (rowstart + j)] = Convert.ToInt32(intArray[j], 16); 
-                }
-                  
-                Trace.WriteLine(Command.ram[i, (rowstart + j)]); 
-            }
-             
+            data.UpdateRamFromRow(e.Row);
         }
 
-        private String[] ConvertRowToIntArray(DataRow row)
-        {
-            // Neues int-Array erstellen
-            String[] intArray = new String[row.ItemArray.Length];
-
-            // Daten aus der DataRow in das int-Array kopieren
-            for (int i = 0; i < row.ItemArray.Length; i++)
-            {
-                intArray[i] = Convert.ToString(row[i]);
-            }
-
-            return intArray;
-        }
 
         private int Fetch()
         {
             int programCounter = Command.ram[Command.bank, 2];
-            int command = commands[programCounter];
+            int command = data.commands[programCounter];
             programCounter++;
             Command.ChangePCLATH(Command.ram[Command.bank, 2] + 1);
             return command;
@@ -668,6 +629,7 @@ namespace Pic_Simulator
             runTime += ((deltaT * 4000000.00) / Command.quarzfrequenz);
             Laufzeitzaehler.Text = runTime.ToString();
         }
+
 
         private bool Decode(int command)
         {
