@@ -633,142 +633,143 @@ namespace Pic_Simulator
 
         private bool Decode(int command)
         {
+            InstructionProcessor processor = Command.GetInstructionProcessor();
             int deltaT = 0;
             if ((command & 0x3F00) == 0x3000)
             {
-                deltaT = Command.MOVLW(command & 0xFF);
+                deltaT = processor.MOVLW(command & 0xFF);
             }
             if ((command & 0x3F80) == 0x0080)
             {
-                deltaT = Command.MOVWF(command & 0x7F);
+                deltaT = processor.MOVWF(command & 0x7F);
             }
             if ((command & 0x3F80) == 0x0780 || (command & 0x3F80) == 0x0700)
             {
-                deltaT = Command.ADDWF(command & 0xFF);
+                deltaT = processor.ADDWF(command & 0xFF);
             }
             if ((command & 0x3F80) == 0x0500 || (command & 0x3F80) == 0x0580)
             {
-                deltaT = Command.ANDWF(command & 0xFF);
+                deltaT = processor.ANDWF(command & 0xFF);
             }
             if ((command & 0x3F00) == 0x3E00)
             {
-                deltaT = Command.ADDLW(command & 0xFF);
+                deltaT = processor.ADDLW(command & 0xFF);
             }
             if ((command & 0x3F00) == 0x3900)
             {
-                deltaT = Command.ANDLW(command & 0xFF);
+                deltaT = processor.ANDLW(command & 0xFF);
             }
             if ((command & 0x3F80) == 0x0180)
             {
-                deltaT = Command.CLRF(command & 0x7F);
+                deltaT = processor.CLRF(command & 0x7F);
             }
             if ((command & 0x3F80) == 0x0100)
             {
-                deltaT = Command.CLRW();
+                deltaT = processor.CLRW();
             }
             if ((command & 0x3F80) == 0x0980 || (command & 0x3F80) == 0x0900)
             {
-                deltaT = Command.COMF(command & 0xFF);
+                deltaT = processor.COMF(command & 0xFF);
             }
             if ((command & 0x3F80) == 0x0380 || (command & 0x3F80) == 0x0300)
             {
-                deltaT = Command.DECF(command & 0xFF);
+                deltaT = processor.DECF(command & 0xFF);
             }
             if ((command & 0x3800) == 0x2000)
             {
-                deltaT = Command.CALL(command & 0xFF, Stack);
+                deltaT = processor.CALL(command & 0xFF, Stack);
             }
             if ((command & 0xFFFF) == 0x0008)
             {
-                deltaT = Command.RETURN(Stack);
+                deltaT = processor.RETURN(Stack);
             }
             if ((command & 0x3800) == 0x2800)
             {
-                deltaT = Command.GOTO(command & 0x7FF, Stack);
+                deltaT = processor.GOTO(command & 0x7FF, Stack);
             }
             if ((command & 0xFC00) == 0x3400)
             {
-                deltaT = Command.RETLW(command & 0xFF, Stack);
+                deltaT = processor.RETLW(command & 0xFF, Stack);
             }
             if ((command & 0x3F80) == 0x0B80 || (command & 0x3F80) == 0x0B00)
             {
-                deltaT = Command.DECFSZ(command & 0xFF, Stack);
+                deltaT = processor.DECFSZ(command & 0xFF, Stack);
             }
             if ((command & 0x3F80) == 0x0A80 || (command & 0x3F80) == 0x0A00)
             {
-                deltaT = Command.INCF(command & 0xFF);
+                deltaT = processor.INCF(command & 0xFF);
             }
             if ((command & 0x3F80) == 0x0F80 || (command & 0x3F80) == 0xF00)
             {
-                deltaT = Command.INCFSZ(command & 0xFF, Stack);
+                deltaT = processor.INCFSZ(command & 0xFF, Stack);
             }
             if ((command & 0x3F80) == 0x0480 || (command & 0x3F80) == 0x0400)
             {
-                deltaT = Command.IORWF(command & 0xFF);
+                deltaT = processor.IORWF(command & 0xFF);
             }
             if ((command & 0x3F80) == 0x0880 || (command & 0x3F80) == 0x0800)
             {
-                deltaT = Command.MOVF(command & 0xFF);
+                deltaT = processor.MOVF(command & 0xFF);
             }
             if ((command & 0xFFFF) == 0x0000)
             {
-                deltaT = Command.NOP();
+                deltaT = processor.NOP();
             }
             if ((command & 0x3F80) == 0x0D80 || (command & 0x3F80) == 0x0D00)
             {
-                deltaT = Command.RLF(command & 0xFF);
+                deltaT = processor.RLF(command & 0xFF);
             }
             if ((command & 0x3F80) == 0x0C80 || (command & 0x3F80) == 0x0C00)
             {
-                deltaT = Command.RRF(command & 0xFF);
+                deltaT = processor.RRF(command & 0xFF);
             }
             if ((command & 0x3F80) == 0x0680 || (command & 0x3F80) == 0x0600)
             {
-                deltaT = Command.XORWF(command & 0xFF);
+                deltaT = processor.XORWF(command & 0xFF);
             }
             if ((command & 0x3F00) == 0x3A00)
             {
-                deltaT = Command.XORLW(command & 0xFF);
+                deltaT = processor.XORLW(command & 0xFF);
             }
             if ((command & 0x3C00) == 0x1000)
             {
-                deltaT = Command.BCF(command & 0x03FF);
+                deltaT = processor.BCF(command & 0x03FF);
             }
             if ((command & 0x3C00) == 0x1400)
             {
-                deltaT = Command.BSF(command & 0x03FF);
+                deltaT = processor.BSF(command & 0x03FF);
             }
             if ((command & 0x3C00) == 0x1800)
             {
-                deltaT = Command.BTFSC(command & 0x03FF, Stack);
+                deltaT = processor.BTFSC(command & 0x03FF, Stack);
             }
             if ((command & 0x3C00) == 0x1C00)
             {
-                deltaT = Command.BTFSS(command & 0x03FF, Stack);
+                deltaT = processor.BTFSS(command & 0x03FF, Stack);
             }
             if ((command & 0x3F00) == 0x0E00)
             {
-                deltaT = Command.SWAPF(command & 0xFF);
+                deltaT = processor.SWAPF(command & 0xFF);
             }
             if ((command & 0x3F80) == 0x0280 || (command & 0x3F80) == 0x0200)
             {
-                deltaT = Command.SUBWF(command & 0xFF);
+                deltaT = processor.SUBWF(command & 0xFF);
             }
             if ((command & 0x3F00) == 0x3800)
             {
-                deltaT = Command.IORLW(command & 0xFF);
+                deltaT = processor.IORLW(command & 0xFF);
             }
             if ((command & 0x3F00) == 0x3C00)
             {
-                deltaT = Command.SUBLW(command & 0xFF);
+                deltaT = processor.SUBLW(command & 0xFF);
             }
             if((command & 0xFFFF) == 0x0060)
             {
-                deltaT = Command.CLRWDT();
+                deltaT = processor.CLRWDT();
             }
             if((command & 0xFFFF) == 0x0009)
             {
-                deltaT = Command.RETFIE(Stack);
+                deltaT = processor.RETFIE(Stack);
             }
             if((command & 0xFFFF) == 0x0063)
             {

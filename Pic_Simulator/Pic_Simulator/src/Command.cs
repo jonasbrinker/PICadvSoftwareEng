@@ -24,352 +24,23 @@ public class Command
     static int oldBank = 0;
     static int oldRB0 = 0;
     static int[] oldRBValues = new int[8];
-    static int interruptPos = 0;
+    public static int interruptPos = 0;
     public static bool sleepModus = false;
     public static int PCLATH = 0;
     public static int[] EEPROMStorage = new int[64];
     static bool firstWriteEEPROMMuster = false;
+
+    public static InstructionProcessor GetInstructionProcessor()
+    {
+        return new InstructionProcessor(ram, bank, wReg);
+    }
 
     public static void setQuarzfrequenz(int newQuarzfrezuenz)
     {
         quarzfrequenz = newQuarzfrezuenz; 
     }
 
-    public static int ANDWF(int address)
-    {
-        if ((address & 0x7F) == 0) address = address | ram[bank, 4];
-        int result = wReg & ram[bank, address & 0x7F];
-        Zeroflag(result);
-        DecideSaving(result, address);
-        return 1;
-    }
-
-    public static int ADDWF(int address)
-    {
-        if ((address & 0x7F) == 0) address = address | ram[bank, 4];
-        int result = ADD(ram[bank, address & 0x007F], wReg);
-        DecideSaving(result, address);
-        return 1;
-    }
-    private static int ADD(int value1, int value2)
-    {
-        HalfCarry(value1, value2);
-        Carry(value1 + value2);
-        Zeroflag((value1 + value2) % 256);
-        return (value1 + value2) & 0xFF; // Wird carry immer aktiv auf 0 gesetzt?
-    }
-    public static int MOVLW(int literal)
-    {
-        wReg = literal;
-        return 1;
-    }
-
-    public static int MOVWF(int storageLocation)
-    {
-        if (storageLocation == 0) storageLocation = ram[bank, 4];
-        ram[bank, storageLocation] = wReg;
-        if (storageLocation == 1) SetPrescaler();
-        return 1;
-    }
-    public static int ADDLW(int literal)
-    {
-        int result = ADD(literal, wReg);
-        wReg = result;
-        return 1;
-    }
-
-    public static int ANDLW(int literal)
-    {
-        wReg = literal & wReg;
-        Zeroflag(wReg);
-        return 1;
-    }
-
-    public static int CLRF(int address)
-    {
-        if ((address & 0x7F) == 0) address = address | ram[bank, 4];
-        ram[bank, address] = 0;
-        if (bank == 0 && address == 1) SetPrescaler();
-        Zeroflag(ram[bank, address]);
-        return 1;
-    }
-
-    public static int CLRW()
-    {
-        wReg = 0;
-        Zeroflag(wReg);
-        return 1;
-    }
-    public static int COMF(int address)
-    {
-        if ((address & 0x7F) == 0) address = address | ram[bank, 4];
-        int value = ram[bank, address & 0x7F];
-        int kom = value ^ 0xFF;
-        Zeroflag(kom);
-        DecideSaving(kom, address);
-        return 1;
-    }
-
-    public static int CALL(int address, StackPanel stack)
-    {
-        if (callPosition == 8)
-        {
-            MessageBox.Show("Some text", "Stack overflow", MessageBoxButton.OK, MessageBoxImage.Error);
-            return 0;
-        }
-        callStack[callPosition] = ram[bank, 2] - 1;
-        ChangePCLATH(address);
-        callPosition++;
-        LST_File.JumpToLine(stack, address);
-        return 2;
-    }
-
-    public static int DECF(int address)
-    {
-        if ((address & 0x7F) == 0) address = address | ram[bank, 4];
-        int result = (ram[bank, address & 0x7F] + 0xFF) % 256;
-        Zeroflag(result);//SUB(ram[bank, address & 0x7F],1);
-        DecideSaving(result, address);
-        return 1;
-    }
-
-    public static int RETURN(StackPanel stack)
-    {
-        if (callPosition <= 0)
-        {
-            //LST_File.pos++;
-            MessageBox.Show("Some text", "Stack Underflow", MessageBoxButton.OK, MessageBoxImage.Error);
-            return 0;
-        }
-        int address = callStack[callPosition - 1];
-        callStack[callPosition - 1] = -1;
-        callPosition--;
-        LST_File.JumpToLine(stack, address + 1);
-        return 2;
-    }
-    public static int RETFIE(StackPanel stack)
-    {
-        int address = interruptPos;
-        LST_File.JumpToLine(stack, address + 1);
-        return 2;
-    }
-
-    public static int DECFSZ(int address, StackPanel stack)
-    {
-        if ((address & 0x7F) == 0) address = address | ram[bank, 4];
-        int result = (ram[bank, address & 0x7F] - 1) % 256;
-        DecideSaving(result, address);
-        if (result == 0)
-        {
-            ChangePCLATH(PCLATH + 1);
-            LST_File.JumpToLine(stack, ram[bank, 2]);
-            return 2;
-        }
-        return 1;
-    }
-    public static int INCF(int address)
-    {
-        if ((address & 0x7F) == 0) address = address | ram[bank, 4];
-        int result = (ram[bank, address & 0x7F] + 1) % 256;
-        DecideSaving(result, address);
-        Zeroflag(result);
-        return 1;
-    }
-    public static int INCFSZ(int address, StackPanel stack)
-    {
-        if ((address & 0x7F) == 0) address = address | ram[bank, 4];
-        int result = (ram[bank, address & 0x7F] + 1) % 256;
-        DecideSaving(result, address);
-        if (result == 0)
-        {
-            ChangePCLATH(PCLATH + 1);
-            LST_File.JumpToLine(stack, ram[bank, 2]);
-            return 2;
-        }
-        return 1;
-    }
-
-    public static int IORWF(int address)
-    {
-        if ((address & 0x7F) == 0) address = address | ram[bank, 4];
-        int result = wReg ^ ram[bank, address & 0x7F];
-        DecideSaving(result, address);
-        Zeroflag(result);
-        return 1;
-    }
-
-    public static int MOVF(int address)
-    {
-        if ((address & 0x7F) == 0) address = address | ram[bank, 4];
-        int value = ram[bank, address & 0x7F];
-        DecideSaving(value, address);
-        Zeroflag(value);
-        return 1;
-    }
-
-    public static int NOP()
-    {
-        //Hier wird nichts ausgeführt
-        return 1;
-    }
-    public static int RLF(int address)
-    {
-        if ((address & 0x7F) == 0) address = address | ram[bank, 4];
-        int firstBit = ram[bank, address & 0x7F] & 0x80;
-        int carryValueOld = ram[bank, 3] & 0x1;
-        if (firstBit == 128)
-        {
-            ram[bank, 3] = ram[bank, 3] | 0b00000001;
-        }
-        else
-        {
-            ram[bank, 3] = ram[bank, 3] & 0b11111110;
-        }
-        int result = (ram[bank, address & 0x7F] << 1) % 256;
-
-        if (carryValueOld == 1)
-        {
-            result = result + 1;
-        }
-        DecideSaving(result, address);
-        return 1;
-    }
-
-    public static int RRF(int address)
-    {
-        if ((address & 0x7F) == 0) address = address | ram[bank, 4];
-        int LasttBit = ram[bank, address & 0x7F] & 0x1;
-        int carryValueOld = ram[bank, 3] & 0x1;
-        if (LasttBit == 1)
-        {
-            ram[bank, 3] = ram[bank, 3] | 0b00000001;
-        }
-        else
-        {
-            ram[bank, 3] = ram[bank, 3] & 0b11111110;
-        }
-        int result = (ram[bank, address & 0x7F] >> 1) % 256;
-
-        if (carryValueOld == 1)
-        {
-            result = result + 128;
-        }
-        DecideSaving(result, address);
-        return 1;
-    }
-
-    public static int XORWF(int address)
-    {
-        if ((address & 0x7F) == 0) address = address | ram[bank, 4];
-        int result = wReg ^ ram[bank, address & 0x7F];
-        DecideSaving(result, address);
-        Zeroflag(result);
-        return 1;
-    }
-
-    public static int XORLW(int literal)
-    {
-        wReg = wReg ^ literal;
-        Zeroflag(wReg);
-        return 1;
-    }
-
-    public static int GOTO(int address, StackPanel stack)
-    {
-        ChangePCLATH(address);
-        LST_File.JumpToLine(stack, ram[bank, 2]);
-        return 2;
-    }
-
-    public static int RETLW(int value, StackPanel stack)
-    {
-        RETURN(stack);
-        wReg = value;
-        return 2;
-    }
-
-    public static int BCF(int address)
-    {
-        if ((address & 0x7F) == 0) address = (address & 0xFF80) | ram[bank, 4];
-        int bit = (address & 0x380) >> 7;
-        int rotated = (0x01 << bit) ^ 0xFF;
-        int tmp1 = ram[bank, address & 0x7F];
-        ram[bank, address & 0x7F] = ram[bank, address & 0x7F] & rotated;
-        int tmp = ram[bank, address & 0x7F];
-        if ((ram[bank,3] & 0x20) == 0x0) bank = 0;
-        return 1;
-    }
-
-    public static int BSF(int address)
-    {
-        if ((address & 0x7F) == 0) address = (address & 0xFF80) | ram[bank, 4];
-        int bit = (address & 0x380) >> 7;
-        int rotated = 0x01 << bit;
-        ram[bank, address & 0x7F] = ram[bank, address & 0x7F] | rotated;
-        int tmp = ram[bank, 0x3] & 0x20;
-        if ((ram[bank, 0x3] & 0x20) == 0x20) bank = 1;
-        return 1;
-    }
-    public static int BTFSC(int address, StackPanel stack)
-    {
-        if ((address & 0x7F) == 0) address = (address & 0xFF80) | ram[bank, 4];
-        int bit = (address & 0x380) >> 7;
-        int rotated = (ram[bank, address & 0x7F] >> bit) & 0x1;
-        if (rotated == 1) return 1;
-        LST_File.JumpToLine(stack, ram[bank, 2] + 1);
-        return 2;
-    }
-    public static int BTFSS(int address, StackPanel stack)
-    {
-        if ((address & 0x7F) == 0) address = (address & 0xFF80) | ram[bank, 4];
-        int bit = (address & 0x380) >> 7;
-        int rotated = (ram[bank, address & 0x7F] >> bit) & 0x1;
-        if (rotated == 0) return 1;
-        LST_File.JumpToLine(stack, ram[bank, 2] + 1);
-        return 2;
-    }
-    public static int SWAPF(int address)
-    {
-        if ((address & 0x7F) == 0) address = address | ram[bank, 4];
-        int value = ram[bank, address & 0x7F];
-        int newUpper = (value & 0x0F) << 4;
-        int newLower = (value & 0xF0) >> 4;
-        int newValue = newUpper | newLower;
-        DecideSaving(newValue, address);
-        return 1;
-    }
-    public static int IORLW(int value)
-    {
-        wReg = wReg | value;
-        Zeroflag(wReg);
-        return 1;
-    }
-    public static int SUBLW(int value)
-    {
-        int kom = (wReg ^ 0xFF) + 1;
-        int result = ADD(value, kom);
-        //kom = (result ^ 0xFF) + 1;
-        wReg = result;
-        return 1;
-    }
-    public static int SUBWF(int address)
-    {
-        if ((address & 0x7F) == 0) address = address | ram[bank, 4];
-        int kom = (wReg ^ 0xFF) +1;
-        int result = ADD(ram[bank, address & 0x7F], kom);
-        //kom = (result ^ 0xFF) + 1;
-        DecideSaving(result, address);
-        return 1;
-    }
-
-    public static int CLRWDT()
-    {
-        watchdog = 18000;
-        SetPrescaler();
-        ram[0, 3] = ram[0, 3] | 0b00011000;
-        return 1;
-    }
-    private static void DecideSaving(int value, int address = -1)
+    internal static void DecideSaving(int value, int address = -1)
     {
         if ((address & 0x0080) == 0x0080)
         {
@@ -389,7 +60,7 @@ public class Command
     }
 
     //Methods for setting the falgs in the Status register
-    private static void Zeroflag(int value)
+    internal static void Zeroflag(int value)
     {
         if (value == 0)
         {
@@ -401,7 +72,7 @@ public class Command
         }
     }
 
-    private static void Carry(int value)
+    public static void Carry(int value)
     {
         if (value > 256)
         {
@@ -413,7 +84,7 @@ public class Command
         }
     }
 
-    private static void HalfCarry(int value1, int value2)
+    public static void HalfCarry(int value1, int value2)
     {
         if (value1 == 256) value1 = 0xF;
         else value1 = value1 & 0xF;
@@ -532,7 +203,7 @@ public class Command
         Timer0Interrupt(stack);
     }
 
-    private static void SetPrescaler()
+    public static void SetPrescaler()
     {
         if (GetSelectedBit(ram[1, 1], 3) == 1)
         {
