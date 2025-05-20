@@ -5,20 +5,29 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Controls;
 using System.Windows;
+using System.Collections;
+using System.Windows.Controls.Primitives;
 
 namespace Pic_Simulator
 {
-    public class InstructionProcessor
+    public class InstructionProcessor : IBitOperations
     {
         private int[,] ram;
         private int bank;
         private int wReg;
+        private IBitOperations bitOps;
+
+        public int BCF(int address) => bitOps.BCF(address);
+        public int BSF(int address) => bitOps.BSF(address);
+        public int BTFSC(int address, StackPanel stack) => bitOps.BTFSC(address, stack);
+        public int BTFSS(int address, StackPanel stack) => bitOps.BTFSS(address, stack);
 
         public InstructionProcessor(int[,] ram, int bank, int wReg)
         {
             this.ram = ram;
             this.bank = bank;
             this.wReg = wReg;
+            this.bitOps = new BitOperationHandler(ram, bank);
         }
 
         public int ANDWF(int address)
@@ -274,46 +283,6 @@ namespace Pic_Simulator
             return 2;
         }
 
-        public int BCF(int address)
-        {
-            if ((address & 0x7F) == 0) address = (address & 0xFF80) | ram[bank, 4];
-            int bit = (address & 0x380) >> 7;
-            int rotated = (0x01 << bit) ^ 0xFF;
-            int tmp1 = ram[bank, address & 0x7F];
-            ram[bank, address & 0x7F] = ram[bank, address & 0x7F] & rotated;
-            int tmp = ram[bank, address & 0x7F];
-            if ((ram[bank, 3] & 0x20) == 0x0) bank = 0;
-            return 1;
-        }
-
-        public int BSF(int address)
-        {
-            if ((address & 0x7F) == 0) address = (address & 0xFF80) | ram[bank, 4];
-            int bit = (address & 0x380) >> 7;
-            int rotated = 0x01 << bit;
-            ram[bank, address & 0x7F] = ram[bank, address & 0x7F] | rotated;
-            int tmp = ram[bank, 0x3] & 0x20;
-            if ((ram[bank, 0x3] & 0x20) == 0x20) bank = 1;
-            return 1;
-        }
-        public int BTFSC(int address, StackPanel stack)
-        {
-            if ((address & 0x7F) == 0) address = (address & 0xFF80) | ram[bank, 4];
-            int bit = (address & 0x380) >> 7;
-            int rotated = (ram[bank, address & 0x7F] >> bit) & 0x1;
-            if (rotated == 1) return 1;
-            LST_File.JumpToLine(stack, ram[bank, 2] + 1);
-            return 2;
-        }
-        public int BTFSS(int address, StackPanel stack)
-        {
-            if ((address & 0x7F) == 0) address = (address & 0xFF80) | ram[bank, 4];
-            int bit = (address & 0x380) >> 7;
-            int rotated = (ram[bank, address & 0x7F] >> bit) & 0x1;
-            if (rotated == 0) return 1;
-            LST_File.JumpToLine(stack, ram[bank, 2] + 1);
-            return 2;
-        }
         public int SWAPF(int address)
         {
             if ((address & 0x7F) == 0) address = address | ram[bank, 4];
