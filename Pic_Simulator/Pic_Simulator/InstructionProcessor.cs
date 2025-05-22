@@ -22,12 +22,12 @@ namespace Pic_Simulator
         public int BTFSC(int address, StackPanel stack) => bitOps.BTFSC(address, stack);
         public int BTFSS(int address, StackPanel stack) => bitOps.BTFSS(address, stack);
 
-        public InstructionProcessor(int[,] ram, int bank, int wReg)
+        public InstructionProcessor(int[,] ram, int bank, int wReg, IBitOperations bitOperations)
         {
             this.ram = ram;
             this.bank = bank;
             this.wReg = wReg;
-            this.bitOps = new BitOperationHandler(ram, bank);
+            this.bitOps = bitOperations;
         }
 
         public int ANDWF(int address)

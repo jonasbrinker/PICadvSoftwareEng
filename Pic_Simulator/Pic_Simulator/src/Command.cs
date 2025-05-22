@@ -32,12 +32,13 @@ public class Command
 
     public static InstructionProcessor GetInstructionProcessor()
     {
-        return new InstructionProcessor(ram, bank, wReg);
+        IBitOperations bitOperations = new BitOperationHandler(ram, bank);
+        return new InstructionProcessor(ram, bank, wReg, bitOperations);
     }
 
     public static void setQuarzfrequenz(int newQuarzfrezuenz)
     {
-        quarzfrequenz = newQuarzfrezuenz; 
+        quarzfrequenz = newQuarzfrezuenz;
     }
 
     internal static void DecideSaving(int value, int address = -1)
@@ -116,17 +117,17 @@ public class Command
         if ((value & bit) == bit) return 1;
         else return 0;
     }
-    
+
 
     public static int SetSelectedBit(int value, int pos, int bit)
     {
         int rotatedBit;
-        if(bit == 0)
+        if (bit == 0)
         {
             rotatedBit = 0b01111111;
             pos = 7 - pos;
             rotatedBit = rotatedBit >> pos;
-            rotatedBit = (rotatedBit + 1) ^ 0xFF; 
+            rotatedBit = (rotatedBit + 1) ^ 0xFF;
             return value & rotatedBit;
         }
         rotatedBit = 0b00000001;
@@ -136,8 +137,8 @@ public class Command
 
     public static void SLEEP()
     {
-        ram[bank,3] = SetSelectedBit(ram[bank, 3], 3, 0);
-        ram[bank,3] = SetSelectedBit(ram[bank, 3], 4, 1);
+        ram[bank, 3] = SetSelectedBit(ram[bank, 3], 3, 0);
+        ram[bank, 3] = SetSelectedBit(ram[bank, 3], 4, 1);
         SetPrescaler();
         watchdog = 0;
         sleepModus = true;
@@ -207,12 +208,12 @@ public class Command
     {
         if (GetSelectedBit(ram[1, 1], 3) == 1)
         {
-            prescaler = (int) Math.Pow(2,ram[1, 1] & 0x7);
+            prescaler = (int)Math.Pow(2, ram[1, 1] & 0x7);
         }
         else
         {
             int value = (ram[1, 1] & 0x7);
-            prescaler = (int)Math.Pow(2, (ram[1, 1] & 0x7)) *2;
+            prescaler = (int)Math.Pow(2, (ram[1, 1] & 0x7)) * 2;
         }
         setTMR = 0;
         PSA();
@@ -229,7 +230,7 @@ public class Command
 
     public static void PSA()
     {
-        if (GetSelectedBit(ram[1,1],3) == 0)
+        if (GetSelectedBit(ram[1, 1], 3) == 0)
         {
             prescalerToWatchdog = false;
         }
@@ -243,7 +244,7 @@ public class Command
         deltaT = deltaT * 4000000 / quarzfrequenz;
         if (watchdog + deltaT >= 18000)
         {
-            if(prescalerToWatchdog)
+            if (prescalerToWatchdog)
             {
                 if (prescaler != 0)
                 {
@@ -254,7 +255,7 @@ public class Command
                 {
                     if (sleepModus)
                     {
-                        SetSelectedBit(ram[0, 3],4, 0);
+                        SetSelectedBit(ram[0, 3], 4, 0);
                         watchdog = 0;
                         return;
                     }
@@ -264,7 +265,7 @@ public class Command
             }
             else
             {
-                if(sleepModus)
+                if (sleepModus)
                 {
                     SetSelectedBit(ram[0, 3], 4, 0);
                     watchdog = 0;
@@ -285,7 +286,7 @@ public class Command
     }
     public static void Timer0Interrupt(StackPanel stack)
     {
-        if (ram[0,1] >= 256)
+        if (ram[0, 1] >= 256)
         {
             ram[0, 1] = 0;
             ram[0, 11] = ram[0, 11] | 0b00000100;
@@ -315,11 +316,11 @@ public class Command
 
     public static void EEPROM()
     {
-        if (GetSelectedBit(ram[1,8],0) == 1)
+        if (GetSelectedBit(ram[1, 8], 0) == 1)
         {
             ReadEEPROMValue();
         }
-        if(GetSelectedBit(ram[1, 8], 1) == 1 && GetSelectedBit(ram[1, 8], 2) == 1 && GetSelectedBit(ram[bank, 11], 7) == 0)
+        if (GetSelectedBit(ram[1, 8], 1) == 1 && GetSelectedBit(ram[1, 8], 2) == 1 && GetSelectedBit(ram[bank, 11], 7) == 0)
         {
             EEPROMStorage[ram[0, 9]] = ram[0, 8];
             ram[1, 8] = SetSelectedBit(ram[1, 8], 4, 1);
@@ -345,8 +346,8 @@ public class Command
             {
                 WriteEEPROMValue();
                 firstWriteEEPROMMuster = false;
-                ram[1,8] = SetSelectedBit(ram[1, 8], 1, 0);
-                ram[1,8] = SetSelectedBit(ram[1, 8], 4, 1);
+                ram[1, 8] = SetSelectedBit(ram[1, 8], 1, 0);
+                ram[1, 8] = SetSelectedBit(ram[1, 8], 4, 1);
             }
         }
     }
@@ -363,7 +364,7 @@ public class Command
                 oldRBValues[i] = GetSelectedBit(ram[0, 6], i);
             }
         }
-        if(isInterrupt) ram[bank, 11] = SetSelectedBit(ram[bank, 11], 0, 1);
+        if (isInterrupt) ram[bank, 11] = SetSelectedBit(ram[bank, 11], 0, 1);
         if (isInterrupt && GetSelectedBit(ram[0, 11], 0) == 1 && GetSelectedBit(ram[0, 11], 3) == 1 && GetSelectedBit(ram[0, 11], 7) == 1)
         {
             interruptPos = ram[bank, 2] - 1;
@@ -376,17 +377,17 @@ public class Command
         //todo change to reset 0b1111111;
         //ram[1, 1] = 0b11111111;
         ram[1, 1] = 0b11111111;
-        ram[0,11] = 0b00100000;
+        ram[0, 11] = 0b00100000;
         ram[0, 3] = 0b00011000;
         ram[1, 5] = 0b11111111;
         ram[1, 6] = 0b11111111;
         SetPrescaler();
-        if(stack.Children.Count != 0) LST_File.JumpToLine(stack, 0);
+        if (stack.Children.Count != 0) LST_File.JumpToLine(stack, 0);
     }
 
     public static void Mirroring()
     {
-        if((oldBank == 0 && bank == 0) || (oldBank == 0 && bank == 1))
+        if ((oldBank == 0 && bank == 0) || (oldBank == 0 && bank == 1))
         {
             ram[1, 2] = ram[0, 2];
             ram[1, 3] = ram[0, 3];
