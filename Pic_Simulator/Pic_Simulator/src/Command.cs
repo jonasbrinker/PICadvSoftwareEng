@@ -149,7 +149,7 @@ public class Command
         ram[bank, 3] = SetSelectedBit(ram[bank, 3], 4, 0);
         sleepModus = false;
     }
-    public static void Timer0(StackPanel stack, int steps)
+    public static void Timer0(Action<int> onJumpToLine, int steps)
     {
         if (GetSelectedBit(ram[1, 1], 5) == 0)
         {
@@ -201,7 +201,7 @@ public class Command
                 else if (GetSelectedBit(ram[0, 5], 4) == 1 && lastEdge == 0) lastEdge = 1;
             }
         }
-        Timer0Interrupt(stack);
+        Timer0Interrupt(onJumpToLine);
     }
 
     public static void SetPrescaler()
@@ -239,7 +239,7 @@ public class Command
             prescalerToWatchdog = true;
         }
     }
-    public static void Watchdog(StackPanel stack, int deltaT)
+    public static void Watchdog(Action onReset, Action<string, string> onShowMessage, int deltaT)
     {
         deltaT = deltaT * 4000000 / quarzfrequenz;
         if (watchdog + deltaT >= 18000)
@@ -259,8 +259,8 @@ public class Command
                         watchdog = 0;
                         return;
                     }
-                    MessageBox.Show("Some text", "Watchdog", MessageBoxButton.OK, MessageBoxImage.Error);
-                    ResetController(stack);
+                    onShowMessage?.Invoke("Some text", "Watchdog");
+                    onReset?.Invoke();
                 }
             }
             else
@@ -271,20 +271,20 @@ public class Command
                     watchdog = 0;
                     return;
                 }
-                MessageBox.Show("Some text", "Watchdog oo", MessageBoxButton.OK, MessageBoxImage.Error);
-                ResetController(stack);
+                onShowMessage?.Invoke("Some text", "Watchdog oo");
+                onReset?.Invoke();
             }
 
         }
         watchdog += deltaT;
     }
 
-    public static void Interrupts(StackPanel stack)
+    public static void Interrupts(Action<int> onJumpToLine)
     {
-        RB0Interrupt(stack);
-        RB4RB7Interrupt(stack);
+        RB0Interrupt(onJumpToLine);
+        RB4RB7Interrupt(onJumpToLine);
     }
-    public static void Timer0Interrupt(StackPanel stack)
+    public static void Timer0Interrupt(Action<int> onJumpToLine)
     {
         if (ram[0, 1] >= 256)
         {
@@ -293,12 +293,12 @@ public class Command
             if (GetSelectedBit(ram[0, 11], 2) == 1 && GetSelectedBit(ram[0, 11], 5) == 1 && GetSelectedBit(ram[0, 11], 7) == 1)
             {
                 interruptPos = ram[bank, 2] - 1;
-                LST_File.JumpToLine(stack, 4);
+                onJumpToLine?.Invoke(4);
                 WakeUp();
             }
         }
     }
-    public static void RB0Interrupt(StackPanel stack)
+    public static void RB0Interrupt(Action<int> onJumpToLine)
     {
         bool flanke = false;
         if (GetSelectedBit(ram[1, 1], 6) == 1 && oldRB0 == 0 && GetSelectedBit(ram[bank, 6], 0) == 1) flanke = true;
@@ -309,7 +309,7 @@ public class Command
         if (flanke && GetSelectedBit(ram[0, 11], 1) == 1 && GetSelectedBit(ram[0, 11], 4) == 1 && GetSelectedBit(ram[0, 11], 7) == 1)
         {
             interruptPos = ram[bank, 2] - 1;
-            LST_File.JumpToLine(stack, 4);
+            onJumpToLine?.Invoke(4);
             WakeUp();
         }
     }
@@ -351,7 +351,7 @@ public class Command
             }
         }
     }
-    public static void RB4RB7Interrupt(StackPanel stack)
+    public static void RB4RB7Interrupt(Action<int> onJumpToLine)
     {
         bool isInterrupt = false;
         for (int i = 0; i < 8; i++)
@@ -368,11 +368,11 @@ public class Command
         if (isInterrupt && GetSelectedBit(ram[0, 11], 0) == 1 && GetSelectedBit(ram[0, 11], 3) == 1 && GetSelectedBit(ram[0, 11], 7) == 1)
         {
             interruptPos = ram[bank, 2] - 1;
-            LST_File.JumpToLine(stack, 4);
+            onJumpToLine?.Invoke(4);
             WakeUp();
         }
     }
-    public static void ResetController(StackPanel stack)
+    public static void ResetController(Action onJumpToStart)
     {
         //todo change to reset 0b1111111;
         //ram[1, 1] = 0b11111111;
@@ -382,7 +382,7 @@ public class Command
         ram[1, 5] = 0b11111111;
         ram[1, 6] = 0b11111111;
         SetPrescaler();
-        if (stack.Children.Count != 0) LST_File.JumpToLine(stack, 0);
+        onJumpToStart?.Invoke();
     }
 
     public static void Mirroring()

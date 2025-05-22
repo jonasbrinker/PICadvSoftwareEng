@@ -59,7 +59,8 @@ namespace Pic_Simulator
         private void LoadFile(object sender, RoutedEventArgs e)
         {
             LST_File.LoadFile(Stack, CodeScroller, data);
-            Command.ResetController(Stack);
+            Action jumpToStartCallback = () => LST_File.JumpToLine(Stack, 0);
+            Command.ResetController(jumpToStartCallback);
             refreshUI();
             resetLEDs();
 
@@ -280,10 +281,13 @@ namespace Pic_Simulator
             Result.Text = "";
             Command.CheckWriteEEPROM();
             Command.Mirroring();
-            Command.Interrupts(Stack);   
+            Action<int> jumpCallback = (lineNumber) => LST_File.JumpToLine(Stack, lineNumber);
+            Command.Interrupts(jumpCallback);
             if (Command.sleepModus)
             {
-                Command.Watchdog(Stack, 1);
+                Action resetCallback = () => Command.ResetController(() => LST_File.JumpToLine(Stack, 0));
+                Action<string, string> messageCallback = (text, title) => MessageBox.Show(text, title, MessageBoxButton.OK, MessageBoxImage.Error);
+                Command.Watchdog(resetCallback, messageCallback, 1);
                 displayrunTime(1);
             }
             Result.Text = Result.Text + "\n" + "W-Register: " + Command.wReg + "\n" + "Watchdog: " + Command.watchdog + "\n" + "PCL: " + (Command.PCLATH & 0xFF) + "\n" + "PCLATH: " + (Command.PCLATH & 0x1F00) + "\n" + "SFR: " + (Command.ram[0,4]);
@@ -775,8 +779,12 @@ namespace Pic_Simulator
             {
                 Command.SLEEP();
             }
-            if(!((command & 0x3F80) == 0x0080 && (command & 0x7F) == 1)) Command.Timer0(Stack,deltaT);
-            Command.Watchdog(Stack,deltaT);
+
+            Action<int> jumpCallback = (lineNumber) => LST_File.JumpToLine(Stack, lineNumber);
+            if (!((command & 0x3F80) == 0x0080 && (command & 0x7F) == 1)) Command.Timer0(jumpCallback, deltaT);
+            Action resetCallback = () => Command.ResetController(() => LST_File.JumpToLine(Stack, 0));
+            Action<string, string> messageCallback = (text, title) => MessageBox.Show(text, title, MessageBoxButton.OK, MessageBoxImage.Error);
+            Command.Watchdog(resetCallback, messageCallback, deltaT);
             displayrunTime(deltaT);
             return true;
         }
@@ -810,7 +818,8 @@ namespace Pic_Simulator
 
         private void resetButton_Click(object sender, RoutedEventArgs e)
         {
-            Command.ResetController(Stack);
+            Action jumpToStartCallback = () => LST_File.JumpToLine(Stack, 0);
+            Command.ResetController(jumpToStartCallback);
             PrintRam();
             refreshRAB();
             refreshSTR();
