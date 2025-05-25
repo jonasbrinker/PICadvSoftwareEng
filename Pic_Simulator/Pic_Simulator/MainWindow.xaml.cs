@@ -280,25 +280,17 @@ namespace Pic_Simulator
             LEDSeven.Fill = new SolidColorBrush(Colors.LightGray);
             LEDEight.Fill = new SolidColorBrush(Colors.LightGray);
         }
-        
+
         private void lightLEDs()
         {
-            int port = 6; // this can be changed weather its PortA or PortB, needs to implemented later
-
-            
-            int intValue= Command.ram[Command.bank, port]; 
-
-            for(int i = 0; i < 8; i++)
+            for (int i = 0; i < 8; i++)
             {
-                int LED = Command.GetSelectedBit(intValue, i); 
-                int isOutputValue = Command.ram[1, port];
-                int LEDisOutput = Command.GetSelectedBit(isOutputValue, i);
-                if(LEDisOutput == 0)
+                if (IsLEDConfiguredAsOutput(i))
                 {
                     switch (i)
                     {
                         case 0:
-                            if (LED == 0)
+                            if (GetLEDState(0) == 0)
                             {
                                 LEDOne.Fill = new SolidColorBrush(Colors.LightGray);
                             }
@@ -308,7 +300,7 @@ namespace Pic_Simulator
                             }
                             break;
                         case 1:
-                            if (LED == 0)
+                            if (GetLEDState(1) == 0)
                             {
                                 LEDOTwo.Fill = new SolidColorBrush(Colors.LightGray);
                             }
@@ -318,7 +310,7 @@ namespace Pic_Simulator
                             }
                             break;
                         case 2:
-                            if (LED == 0)
+                            if (GetLEDState(2) == 0)
                             {
                                 LEDThree.Fill = new SolidColorBrush(Colors.LightGray);
                             }
@@ -328,7 +320,7 @@ namespace Pic_Simulator
                             }
                             break;
                         case 3:
-                            if (LED == 0)
+                            if (GetLEDState(3) == 0)
                             {
                                 LEDFour.Fill = new SolidColorBrush(Colors.LightGray);
                             }
@@ -338,7 +330,7 @@ namespace Pic_Simulator
                             }
                             break;
                         case 4:
-                            if (LED == 0)
+                            if (GetLEDState(4) == 0)
                             {
                                 LEDFive.Fill = new SolidColorBrush(Colors.LightGray);
                             }
@@ -348,7 +340,7 @@ namespace Pic_Simulator
                             }
                             break;
                         case 5:
-                            if (LED == 0)
+                            if (GetLEDState(5) == 0)
                             {
                                 LEDSix.Fill = new SolidColorBrush(Colors.LightGray);
                             }
@@ -358,7 +350,7 @@ namespace Pic_Simulator
                             }
                             break;
                         case 6:
-                            if (LED == 0)
+                            if (GetLEDState(6) == 0)
                             {
                                 LEDSeven.Fill = new SolidColorBrush(Colors.LightGray);
                             }
@@ -368,7 +360,7 @@ namespace Pic_Simulator
                             }
                             break;
                         case 7:
-                            if (LED == 0)
+                            if (GetLEDState(7) == 0)
                             {
                                 LEDEight.Fill = new SolidColorBrush(Colors.LightGray);
                             }
@@ -377,16 +369,36 @@ namespace Pic_Simulator
                                 LEDEight.Fill = new SolidColorBrush(Colors.Red);
                             }
                             break;
-
-
                     }
                 }
-                
             }
-
         }
 
-        
+        private int GetCurrentPort()
+        {
+            return 6;
+        }
+
+        private int GetPortValue()
+        {
+            return Command.ram[Command.bank, GetCurrentPort()];
+        }
+
+        private int GetPortOutputConfiguration()
+        {
+            return Command.ram[1, GetCurrentPort()];
+        }
+
+        private int GetLEDState(int ledIndex)
+        {
+            return Command.GetSelectedBit(GetPortValue(), ledIndex);
+        }
+
+        private bool IsLEDConfiguredAsOutput(int ledIndex)
+        {
+            return Command.GetSelectedBit(GetPortOutputConfiguration(), ledIndex) == 0;
+        }
+
 
 
         private void PrintRaRb()
