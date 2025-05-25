@@ -68,93 +68,68 @@ namespace Pic_Simulator
         }
         void selectedCellsChangedRA(object sender, RoutedEventArgs e)
         {
-            int rowIndex = RAGrid.Items.IndexOf(RAGrid.CurrentItem);
-            int colIndex = RAGrid.CurrentCell.Column.DisplayIndex;
-            string storageVal = (string)data.tableRA.Rows[rowIndex][colIndex];
-            int cellValue = Convert.ToInt32(storageVal);  
-            data.tableRA.Rows[rowIndex][colIndex] = (cellValue == 0) ? 1 : 0;
-            int newBit = 0;
-            
-            if (cellValue == 0)
-            {
-               newBit = 1;
-            }           
-            int ramBit = Command.SetSelectedBit(Command.ram[Command.bank, 5], Math.Abs(colIndex - 7), newBit);
-            Command.ram[Command.bank, 5] = ramBit;
-            refreshUI();
+            ToggleBitInTable(RAGrid, data.tableRA,
+                             value => Convert.ToInt32((string)value),
+                             (newBit, colIndex) => {
+                                 int ramBit = Command.SetSelectedBit(Command.ram[Command.bank, 5], Math.Abs(colIndex - 7), newBit);
+                                 Command.ram[Command.bank, 5] = ramBit;
+                             });
         }
 
-        private void selectedCellsChangedSTR(object sender, RoutedEventArgs e) {
-            int rowIndex = STRGrid.Items.IndexOf(STRGrid.CurrentItem);
-            int colIndex = STRGrid.CurrentCell.Column.DisplayIndex;
-            int cellValue = (int)data.tableSTR.Rows[rowIndex][colIndex];  
-            data.tableSTR.Rows[rowIndex][colIndex] = (cellValue == 0) ? 1 : 0;
-            int newBit = 0;
-
-            if (cellValue == 0)
-            {
-                newBit = 1;
-            }
-            int ramBit = Command.SetSelectedBit(Command.ram[Command.bank, 3], Math.Abs(colIndex - 7), newBit);
-            Command.ram[Command.bank, 3] = ramBit;
-            refreshUI();
-
+        private void selectedCellsChangedSTR(object sender, RoutedEventArgs e)
+        {
+            ToggleBitInTable(STRGrid, data.tableSTR,
+                             value => (int)value,
+                             (newBit, colIndex) => {
+                                 int ramBit = Command.SetSelectedBit(Command.ram[Command.bank, 3], Math.Abs(colIndex - 7), newBit);
+                                 Command.ram[Command.bank, 3] = ramBit;
+                             });
         }
 
         private void selectedCellsChangedINTCON(object sender, RoutedEventArgs e)
         {
-            int rowIndex = INTCONGrid.Items.IndexOf(INTCONGrid.CurrentItem);
-            int colIndex = INTCONGrid.CurrentCell.Column.DisplayIndex;
-            int cellValue = (int)data.tableIntCon.Rows[rowIndex][colIndex];
-            data.tableIntCon.Rows[rowIndex][colIndex] = (cellValue == 0) ? 1 : 0;
-            int newBit = 0;
-
-            if (cellValue == 0)
-            {
-                newBit = 1;
-            }
-            int ramBit = Command.SetSelectedBit(Command.ram[0, 11], Math.Abs(colIndex - 7), newBit);
-            Command.ram[0, 11] = ramBit;
-            refreshUI();
+            ToggleBitInTable(INTCONGrid, data.tableIntCon,
+                             value => (int)value,
+                             (newBit, colIndex) => {
+                                 int ramBit = Command.SetSelectedBit(Command.ram[0, 11], Math.Abs(colIndex - 7), newBit);
+                                 Command.ram[0, 11] = ramBit;
+                             });
         }
 
         private void selectedCellsChangedOption(object sender, RoutedEventArgs e)
         {
-            int rowIndex = OptionGrid.Items.IndexOf(OptionGrid.CurrentItem);
-            int colIndex = OptionGrid.CurrentCell.Column.DisplayIndex;
-            int cellValue = (int)data.tableOption.Rows[rowIndex][colIndex];
-            data.tableOption.Rows[rowIndex][colIndex] = (cellValue == 0) ? 1 : 0;
-            int newBit = 0;
-
-            if (cellValue == 0)
-            {
-                newBit = 1;
-            }
-            int ramBit = Command.SetSelectedBit(Command.ram[1, 1], Math.Abs(colIndex - 7), newBit);
-            Command.ram[1, 1] = ramBit;
-            refreshUI();
+            ToggleBitInTable(OptionGrid, data.tableOption,
+                             value => (int)value,
+                             (newBit, colIndex) => {
+                                 int ramBit = Command.SetSelectedBit(Command.ram[1, 1], Math.Abs(colIndex - 7), newBit);
+                                 Command.ram[1, 1] = ramBit;
+                             });
         }
-
-
-
-
 
         void selectedCellsChangedRB(object sender, RoutedEventArgs e)
         {
-            int rowIndex = RBGrid.Items.IndexOf(RBGrid.CurrentItem);
-            int colIndex = RBGrid.CurrentCell.Column.DisplayIndex;
-            int cellValue = Convert.ToInt32((string)data.tableRB.Rows[rowIndex][colIndex]);
-            data.tableRB.Rows[rowIndex][colIndex] = (cellValue == 0) ? 1 : 0;
-            int newBit = 0;
+            ToggleBitInTable(RBGrid, data.tableRB,
+                             value => Convert.ToInt32((string)value),
+                             (newBit, colIndex) => {
+                                 int ramBit = Command.SetSelectedBit(Command.ram[Command.bank, 6], Math.Abs(colIndex - 7), newBit);
+                                 Command.ram[Command.bank, 6] = ramBit;
+                             });
+        }
 
-            if (cellValue == 0)
-            {
-                newBit = 1;
-            }
-            int ramBit = Command.SetSelectedBit(Command.ram[Command.bank, 6], Math.Abs(colIndex - 7), newBit);
-            Command.ram[Command.bank, 6] = ramBit;
+        private void ToggleBitInTable(DataGrid grid, DataTable table, Func<object, int> valueConverter, Action<int, int> updateRam)
+        {
+            int rowIndex = grid.Items.IndexOf(grid.CurrentItem);
+            int colIndex = grid.CurrentCell.Column.DisplayIndex;
+            object cellValue = table.Rows[rowIndex][colIndex];
+            int intValue = valueConverter(cellValue);
+
+            table.Rows[rowIndex][colIndex] = (intValue == 0) ? 1 : 0;
+            int newBit = (intValue == 0) ? 1 : 0;
+
+            updateRam(newBit, colIndex);
             refreshUI();
         }
+
         private void refreshRAB()
         {
             for (int i = 7; i >= 0; i--)
