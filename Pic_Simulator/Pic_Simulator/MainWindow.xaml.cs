@@ -20,7 +20,7 @@ namespace Pic_Simulator
     /// Interaction logic for MainWindow.xaml
     /// </summary>
     /// 
-    public partial class MainWindow : Window
+    public partial class MainWindow : Window, ISimulatorObserver
     {
         public SimulationData data;
         //private ViewUpdater viewUpdater;
@@ -36,13 +36,87 @@ namespace Pic_Simulator
         {
             InitializeComponent();
             data = new SimulationData();
-            Command.startUpRam();  
+            Command.startUpRam();
+            Command.AddObserver(this);
             PrintRam();
             PrintRaRb();
             PrintSTR();
             PrintOption();
             PrintINTCON();
             PrintStack();           
+        }
+
+        public void OnRAMChanged(int bank, int address, int newValue)
+        {
+            // Dispatcher.Invoke für Thread-Sicherheit (falls nötig)
+            Dispatcher.Invoke(() =>
+            {
+                // Spezifische UI-Updates basierend auf Adresse
+                switch (address)
+                {
+                    case 1: // Timer0 Register
+                        PrintRam(); // Allgemeines RAM-Update
+                        break;
+                    case 2: // PCL Register  
+                        PrintRam();
+                        break;
+                    case 3: // Status Register
+                        refreshSTR();
+                        break;
+                    case 5: // Port A
+                        refreshRAB();
+                        break;
+                    case 6: // Port B
+                        refreshRAB();
+                        lightLEDs(); // LED-Update bei Port B Änderung
+                        break;
+                    case 8: // EEPROM Data
+                        PrintRam();
+                        break;
+                    case 11: // INTCON Register
+                        refreshIntCon();
+                        break;
+                    default:
+                        // Allgemeine RAM-Aktualisierung für andere Adressen
+                        PrintRam();
+                        break;
+                }
+            });
+        }
+
+        public void OnRegisterChanged(string registerName, int newValue)
+        {
+            Dispatcher.Invoke(() =>
+            {
+                switch (registerName)
+                {
+                    case "wReg":
+                        var lines = Result.Text.Split('\n').ToList();
+                        for (int i = 0; i < lines.Count; i++)
+                        {
+                            if (lines[i].Contains("W-Register:"))
+                            {
+                                lines[i] = $"W-Register: {newValue}";
+                                break;
+                            }
+                        }
+                        Result.Text = string.Join("\n", lines);
+                        break;
+                    case "bank":
+                        // Bei Bank-Wechsel relevante Register aktualisieren
+                        refreshSTR();
+                        refreshRAB();
+                        refreshIntCon();
+                        break;
+                }
+            });
+        }
+
+        protected override void OnClosed(EventArgs e)
+        {
+            // Observer abmelden um Memory Leaks zu vermeiden
+            Command.RemoveObserver(this);
+            base.OnClosed(e);
         }
 
         private void refreshUI()
@@ -127,7 +201,6 @@ namespace Pic_Simulator
             int newBit = (intValue == 0) ? 1 : 0;
 
             updateRam(newBit, colIndex);
-            refreshUI();
         }
 
         private void refreshRAB()
@@ -266,7 +339,6 @@ namespace Pic_Simulator
                 displayrunTime(1);
             }
             Result.Text = Result.Text + "\n" + "W-Register: " + Command.wReg + "\n" + "Watchdog: " + Command.watchdog + "\n" + "PCL: " + (Command.PCLATH & 0xFF) + "\n" + "PCLATH: " + (Command.PCLATH & 0x1F00) + "\n" + "SFR: " + (Command.ram[0,4]);
-            refreshUI();
         }
 
         private void resetLEDs()

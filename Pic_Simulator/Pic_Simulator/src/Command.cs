@@ -30,10 +30,55 @@ public class Command
     public static int[] EEPROMStorage = new int[64];
     static bool firstWriteEEPROMMuster = false;
 
+    private static List<ISimulatorObserver> observers = new List<ISimulatorObserver>();
+
+    public static void AddObserver(ISimulatorObserver observer)
+    {
+        if (!observers.Contains(observer))
+        {
+            observers.Add(observer);
+        }
+    }
+
+    public static void RemoveObserver(ISimulatorObserver observer)
+    {
+        observers.Remove(observer);
+    }
+
+    public static void NotifyRAMChanged(int bank, int address, int newValue)
+    {
+        foreach (var observer in observers.ToList())
+        {
+            try
+            {
+                observer.OnRAMChanged(bank, address, newValue);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Observer notification failed: {ex.Message}");
+            }
+        }
+    }
+
+    public static void NotifyRegisterChanged(string registerName, int newValue)
+    {
+        foreach (var observer in observers.ToList())
+        {
+            try
+            {
+                observer.OnRegisterChanged(registerName, newValue);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Observer notification failed: {ex.Message}");
+            }
+        }
+    }
+
     public static InstructionProcessor GetInstructionProcessor()
     {
         IBitOperations bitOperations = new BitOperationHandler(ram, bank);
-        return new InstructionProcessor(ram, bank, wReg, bitOperations);
+        return new InstructionProcessor(bitOperations);
     }
 
     public static void setQuarzfrequenz(int newQuarzfrezuenz)
@@ -53,16 +98,26 @@ public class Command
                 return;
             }
             ram[bank, address & 0x7F] = value;
+            // Observer benachrichtigen
+            NotifyRAMChanged(bank, address & 0x7F, value);
         }
         else
         {
+            int oldWReg = wReg;
             wReg = value;
+            // Observer benachrichtigen bei Änderung
+            if (oldWReg != wReg)
+            {
+                //MessageBox.Show($"W-Register changed from {oldWReg} to {wReg}");
+                NotifyRegisterChanged("wReg", wReg);
+            }
         }
     }
 
     //Methods for setting the falgs in the Status register
     internal static void Zeroflag(int value)
     {
+        int oldValue = ram[bank, 3];
         if (value == 0)
         {
             ram[bank, 3] = ram[bank, 3] | 0b00000100; // Zeroflag
@@ -71,10 +126,16 @@ public class Command
         {
             ram[bank, 3] = ram[bank, 3] & 0b11111011; //Zeroflag
         }
+
+        if (oldValue != ram[bank, 3])
+        {
+            NotifyRAMChanged(bank, 3, ram[bank, 3]);
+        }
     }
 
     public static void Carry(int value)
     {
+        int oldValue = ram[bank, 3];
         if (value > 256)
         {
             ram[bank, 3] = ram[bank, 3] | 0b00000001; // Carryflag
@@ -83,10 +144,16 @@ public class Command
         {
             ram[bank, 3] = ram[bank, 3] & 0b11111110; // Carryflag
         }
+
+        if (oldValue != ram[bank, 3])
+        {
+            NotifyRAMChanged(bank, 3, ram[bank, 3]);
+        }
     }
 
     public static void HalfCarry(int value1, int value2)
     {
+        int oldValue = ram[bank, 3];
         if (value1 == 256) value1 = 0xF;
         else value1 = value1 & 0xF;
         if (value2 == 256) value2 = 0xF;
@@ -99,11 +166,22 @@ public class Command
         {
             ram[bank, 3] = ram[bank, 3] & 0b11111101; //Half Carryflag
         }
+
+        if (oldValue != ram[bank, 3])
+        {
+            NotifyRAMChanged(bank, 3, ram[bank, 3]);
+        }
     }
     public static void ChangePCLATH(int value)
     {
+        int oldValue = ram[bank, 2];
         PCLATH = value;
         ram[bank, 2] = PCLATH & 0xFF;
+
+        if (oldValue != ram[bank, 2])
+        {
+            NotifyRAMChanged(bank, 2, ram[bank, 2]);
+        }
     }
 
     public static int GetSelectedBit(int value, int pos)
@@ -137,20 +215,33 @@ public class Command
 
     public static void SLEEP()
     {
+        int oldValue = ram[bank, 3];
         ram[bank, 3] = SetSelectedBit(ram[bank, 3], 3, 0);
         ram[bank, 3] = SetSelectedBit(ram[bank, 3], 4, 1);
         SetPrescaler();
         watchdog = 0;
         sleepModus = true;
+
+        if (oldValue != ram[bank, 3])
+        {
+            NotifyRAMChanged(bank, 3, ram[bank, 3]);
+        }
     }
     public static void WakeUp()
     {
+        int oldValue = ram[bank, 3];
         ram[bank, 3] = SetSelectedBit(ram[bank, 3], 3, 1);
         ram[bank, 3] = SetSelectedBit(ram[bank, 3], 4, 0);
         sleepModus = false;
+
+        if (oldValue != ram[bank, 3])
+        {
+            NotifyRAMChanged(bank, 3, ram[bank, 3]);
+        }
     }
     public static void Timer0(Action<int> onJumpToLine, int steps)
     {
+        int oldTimer = ram[0, 1];
         if (GetSelectedBit(ram[1, 1], 5) == 0)
         {
             if (prescalerToWatchdog)
@@ -201,6 +292,11 @@ public class Command
                 else if (GetSelectedBit(ram[0, 5], 4) == 1 && lastEdge == 0) lastEdge = 1;
             }
         }
+
+        if (oldTimer != ram[0, 1])
+        {
+            NotifyRAMChanged(0, 1, ram[0, 1]);
+        }
         Timer0Interrupt(onJumpToLine);
     }
 
@@ -223,7 +319,13 @@ public class Command
         //Timer
         if (GetSelectedBit(ram[1, 1], 5) == 0)
         {
+            int oldValue = ram[0, 1];
             ram[0, 1] = 0;
+
+            if (oldValue != ram[0, 1])
+            {
+                NotifyRAMChanged(0, 1, ram[0, 1]);
+            }
         }
         SetPrescaler();
     }
@@ -289,7 +391,12 @@ public class Command
         if (ram[0, 1] >= 256)
         {
             ram[0, 1] = 0;
+            NotifyRAMChanged(0, 1, ram[0, 1]);
+
+            int oldINTCON = ram[0, 11];
             ram[0, 11] = ram[0, 11] | 0b00000100;
+            NotifyRAMChanged(0, 11, ram[0, 11]);
+
             if (GetSelectedBit(ram[0, 11], 2) == 1 && GetSelectedBit(ram[0, 11], 5) == 1 && GetSelectedBit(ram[0, 11], 7) == 1)
             {
                 interruptPos = ram[bank, 2] - 1;
@@ -305,7 +412,12 @@ public class Command
         if (GetSelectedBit(ram[1, 1], 6) == 0 && oldRB0 == 1 && GetSelectedBit(ram[bank, 6], 0) == 0) flanke = true;
         if (oldRB0 == 0 && GetSelectedBit(ram[bank, 6], 0) == 1) oldRB0 = 1;
         if (oldRB0 == 1 && GetSelectedBit(ram[bank, 6], 0) == 0) oldRB0 = 0;
-        if (flanke) ram[bank, 11] = SetSelectedBit(ram[bank, 11], 1, 1);
+        if (flanke)
+        {
+            int oldINTCON = ram[bank, 11];
+            ram[bank, 11] = SetSelectedBit(ram[bank, 11], 1, 1);
+            NotifyRAMChanged(bank, 11, ram[bank, 11]);
+        }
         if (flanke && GetSelectedBit(ram[0, 11], 1) == 1 && GetSelectedBit(ram[0, 11], 4) == 1 && GetSelectedBit(ram[0, 11], 7) == 1)
         {
             interruptPos = ram[bank, 2] - 1;
@@ -323,19 +435,40 @@ public class Command
         if (GetSelectedBit(ram[1, 8], 1) == 1 && GetSelectedBit(ram[1, 8], 2) == 1 && GetSelectedBit(ram[bank, 11], 7) == 0)
         {
             EEPROMStorage[ram[0, 9]] = ram[0, 8];
+            int oldValue = ram[1, 8];
             ram[1, 8] = SetSelectedBit(ram[1, 8], 4, 1);
+            if (oldValue != ram[1, 8])
+            {
+                NotifyRAMChanged(1, 8, ram[1, 8]);
+            }
         }
     }
 
     public static void ReadEEPROMValue()
     {
+        int oldData = ram[0, 8];
         ram[0, 8] = EEPROMStorage[ram[0, 9]];
+        if (oldData != ram[0, 8])
+        {
+            NotifyRAMChanged(0, 8, ram[0, 8]);
+        }
+
+        int oldControl = ram[1, 8];
         ram[1, 8] = SetSelectedBit(ram[1, 8], 0, 0);
+        if (oldControl != ram[1, 8])
+        {
+            NotifyRAMChanged(1, 8, ram[1, 8]);
+        }
     }
     public static void WriteEEPROMValue()
     {
         EEPROMStorage[ram[0, 9]] = ram[0, 8];
+        int oldValue = ram[1, 8];
         ram[1, 8] = SetSelectedBit(ram[1, 8], 4, 1);
+        if (oldValue != ram[1, 8])
+        {
+            NotifyRAMChanged(1, 8, ram[1, 8]);
+        }
     }
     public static void CheckWriteEEPROM()
     {
@@ -346,8 +479,20 @@ public class Command
             {
                 WriteEEPROMValue();
                 firstWriteEEPROMMuster = false;
+
+                int oldValue1 = ram[1, 8];
                 ram[1, 8] = SetSelectedBit(ram[1, 8], 1, 0);
+                if (oldValue1 != ram[1, 8])
+                {
+                    NotifyRAMChanged(1, 8, ram[1, 8]);
+                }
+
+                int oldValue2 = ram[1, 8];
                 ram[1, 8] = SetSelectedBit(ram[1, 8], 4, 1);
+                if (oldValue2 != ram[1, 8])
+                {
+                    NotifyRAMChanged(1, 8, ram[1, 8]);
+                }
             }
         }
     }
@@ -374,13 +519,21 @@ public class Command
     }
     public static void ResetController(Action onJumpToStart)
     {
-        //todo change to reset 0b1111111;
-        //ram[1, 1] = 0b11111111;
         ram[1, 1] = 0b11111111;
+        NotifyRAMChanged(1, 1, ram[1, 1]);
+
         ram[0, 11] = 0b00100000;
+        NotifyRAMChanged(0, 11, ram[0, 11]);
+
         ram[0, 3] = 0b00011000;
+        NotifyRAMChanged(0, 3, ram[0, 3]);
+
         ram[1, 5] = 0b11111111;
+        NotifyRAMChanged(1, 5, ram[1, 5]);
+
         ram[1, 6] = 0b11111111;
+        NotifyRAMChanged(1, 6, ram[1, 6]);
+
         SetPrescaler();
         onJumpToStart?.Invoke();
     }

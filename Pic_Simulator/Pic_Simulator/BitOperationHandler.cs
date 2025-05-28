@@ -23,10 +23,16 @@ namespace Pic_Simulator
             if ((address & 0x7F) == 0) address = (address & 0xFF80) | ram[bank, 4];
             int bit = (address & 0x380) >> 7;
             int rotated = (0x01 << bit) ^ 0xFF;
-            int tmp1 = ram[bank, address & 0x7F];
+
+            int oldValue = ram[bank, address & 0x7F];
             ram[bank, address & 0x7F] = ram[bank, address & 0x7F] & rotated;
-            int tmp = ram[bank, address & 0x7F];
+
             if ((ram[bank, 3] & 0x20) == 0x0) bank = 0;
+
+            if (oldValue != ram[bank, address & 0x7F])
+            {
+                Command.NotifyRAMChanged(bank, address & 0x7F, ram[bank, address & 0x7F]);
+            }
             return 1;
         }
 
@@ -35,9 +41,16 @@ namespace Pic_Simulator
             if ((address & 0x7F) == 0) address = (address & 0xFF80) | ram[bank, 4];
             int bit = (address & 0x380) >> 7;
             int rotated = 0x01 << bit;
+
+            int oldValue = ram[bank, address & 0x7F];
             ram[bank, address & 0x7F] = ram[bank, address & 0x7F] | rotated;
-            int tmp = ram[bank, 0x3] & 0x20;
+
             if ((ram[bank, 0x3] & 0x20) == 0x20) bank = 1;
+
+            if (oldValue != ram[bank, address & 0x7F])
+            {
+                Command.NotifyRAMChanged(bank, address & 0x7F, ram[bank, address & 0x7F]);
+            }
             return 1;
         }
 

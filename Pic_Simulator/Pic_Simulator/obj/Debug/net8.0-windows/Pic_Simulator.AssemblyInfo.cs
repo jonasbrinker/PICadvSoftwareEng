@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Pic_Simulator")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+8caefa78130a8d92f0ba6eee5dc35a1dc9d2eb99")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+96237b5429cbf3008306e5d070200d2b7dedcdb9")]
 [assembly: System.Reflection.AssemblyProductAttribute("Pic_Simulator")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Pic_Simulator")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
