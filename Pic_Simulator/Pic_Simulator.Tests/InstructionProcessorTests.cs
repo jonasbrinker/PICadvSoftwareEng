@@ -183,7 +183,7 @@ namespace Pic_Simulator.Tests
             result.Should().Be(1, "IORLW should return 1 cycle");
             Command.wReg.Should().Be(expected, "OR of max values should remain max");
         }
-        
+
         // ----------- CLRWDT Test --------------
 
         [Fact] // Test 11
@@ -230,6 +230,54 @@ namespace Pic_Simulator.Tests
             // Assert
             result.Should().Be(1, "CLRF should return 1 cycle");
             Command.ram[Command.bank, address].Should().Be(0, "Memory location should remain 0");
+        }
+
+        //---------- BitOps using Mock ----------
+
+        [Fact] // Test 14
+        public void BCF_ShouldCallBitOperationsInterface_WhenCalled()
+        {
+            // Arrange
+            int address = 0x20;
+            _mockBitOps.Setup(x => x.BCF(address)).Returns(1);
+
+            // Act
+            int result = _processor.BCF(address);
+
+            // Assert
+            result.Should().Be(1, "BCF should return the value from BitOperations");
+            _mockBitOps.Verify(x => x.BCF(address), Times.Once, "BCF should call the bit operations interface exactly once");
+        }
+
+        [Fact] // Test 15 
+        public void BSF_ShouldCallBitOperationsInterface_WhenCalled()
+        {
+            // Arrange
+            int address = 0x30;
+            _mockBitOps.Setup(x => x.BSF(address)).Returns(1);
+
+            // Act
+            int result = _processor.BSF(address);
+
+            // Assert
+            result.Should().Be(1, "BSF should return the value from BitOperations");
+            _mockBitOps.Verify(x => x.BSF(address), Times.Once, "BSF should call the bit operations interface exactly once");
+        }
+
+        [Fact] // Test 16
+        public void BTFSC_ShouldCallBitOperationsInterface_WhenCalled()
+        {
+            // Arrange
+            int address = 0x25;
+            _mockBitOps.Setup(x => x.BTFSC(address, null)).Returns(2);
+
+            // Act
+            int result = _processor.BTFSC(address, null);
+
+            // Assert
+            result.Should().Be(2, "BTFSC should return the value from BitOperations");
+            _mockBitOps.Verify(x => x.BTFSC(address, null), Times.Once, 
+                "BTFSC should call the bit operations interface with the correct parameters");
         }
     }
 }
